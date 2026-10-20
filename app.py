@@ -1,0 +1,13 @@
+from flask import Flask, render_template_string
+from flask_socketio import SocketIO
+import os
+app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
+PAGE = """<!DOCTYPE html><html dir="rtl" lang="ku"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Computer A</title><style>*{box-sizing:border-box;margin:0}body{font-family:system-ui;background:#f1f5f9;height:100vh;display:flex;flex-direction:column}.h{background:#1e40af;color:#fff;padding:12px;text-align:center;font-weight:bold}#c{flex:1;overflow-y:auto;padding:10px;background:#e2e8f0}.b{background:#fff;padding:10px;border-radius:15px;margin:6px 0;max-width:85%}.b img{max-width:180px;border-radius:10px}.b video{max-width:180px;border-radius:10px}.ib{display:flex;padding:8px;background:#fff;gap:5px}input{padding:8px;border-radius:15px;border:1px solid #ddd;flex:1}.send{background:#1e40af;color:#fff;border:none;border-radius:15px;padding:8px 15px}</style></head><body><div class="h">چاتی Computer A - وێنە و ڤیدیۆ 📸</div><div id="c"></div><div class="ib"><input id="n" placeholder="ناو" style="max-width:70px"><button onclick="document.getElementById('f').click()">📎</button><input type="file" id="f" hidden accept="image/*,video/*"><input id="m" placeholder="بنووسە..."><button class="send" onclick="s()">ناردن</button></div><script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script><script>const socket=io();let sel=null;document.getElementById('f').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>sel={data:r.result,type:f.type,name:f.name};r.readAsDataURL(f)};function s(){const n=document.getElementById('n').value||'قوتابی';const t=document.getElementById('m').value;const tm=new Date().toLocaleTimeString().slice(0,5);if(sel){socket.emit('chat',{name:n,text:t,time:tm,file:sel});sel=null;document.getElementById('f').value='';}else if(t){socket.emit('chat',{name:n,text:t,time:tm});}document.getElementById('m').value='';}socket.on('chat',d=>{const el=document.createElement('div');el.className='b';let c=`<b style="color:#4f46e5;font-size:11px">${d.name}</b><br>${d.text}`;if(d.file){if(d.file.type.startsWith('image/'))c+=`<br><img src='${d.file.data}'>`;else c+=`<br><video src='${d.file.data}' controls></video>`;}c+=`<div style="font-size:9px;color:#999">${d.time}</div>`;el.innerHTML=c;document.getElementById('c').appendChild(el);document.getElementById('c').scrollTop=99999;});</script></body></html>"""
+@app.route('/')
+def home(): return render_template_string(PAGE)
+@socketio.on('chat')
+def on_chat(data): socketio.emit('chat', data, broadcast=True)
+if __name__ == '__main__':
+    port=int(os.environ.get("PORT",10000))
+    socketio.run(app,host='0.0.0.0',port=port)
